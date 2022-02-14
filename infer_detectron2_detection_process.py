@@ -239,7 +239,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.article = "title of associated research article"
         self.info.journal = "publication journal"
         self.info.year = 2021
-        self.info.license = "MIT License"
+        self.info.license = "Apache-2.0 License"
         # URL of documentation
         self.info.documentationLink = ""
         # Code source repository
