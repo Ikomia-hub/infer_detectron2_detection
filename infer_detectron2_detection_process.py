@@ -1,0 +1,252 @@
+# Copyright (C) 2021 Ikomia SAS
+# Contact: https://www.ikomia.com
+#
+# This file is part of the IkomiaStudio software.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from ikomia import core, dataprocess
+import copy
+# Your imports below
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
+from detectron2.data import MetadataCatalog
+import numpy as np
+import torch
+
+# --------------------
+# - Class to handle the process parameters
+# - Inherits PyCore.CWorkflowTaskParam from Ikomia API
+# --------------------
+class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
+
+    def __init__(self):
+        core.CWorkflowTaskParam.__init__(self)
+        # Place default value initialization here
+        self.model_name = "COCO-Detection/faster_rcnn_R_50_C4_1x"
+        self.conf_thres = 0.5
+        self.cuda = True if torch.cuda.is_available() else False
+        self.update = False
+
+
+    def setParamMap(self, param_map):
+        # Set parameters values from Ikomia application
+        # Parameters values are stored as string and accessible like a python dict
+        self.model_name = param_map["model_name"]
+        self.conf_thres = float(param_map["conf_thres"])
+        self.cuda = eval(param_map["cuda"])
+
+    def getParamMap(self):
+        # Send parameters values to Ikomia application
+        # Create the specific dict structure (string container)
+        param_map = core.ParamMap()
+        param_map["model_name"] = self.model_name
+        param_map["conf_thres"] = str(self.conf_thres)
+        param_map["cuda"] = str(self.cuda)
+        return param_map
+
+
+# --------------------
+# - Class which implements the process
+# - Inherits PyCore.CWorkflowTask or derived from Ikomia API
+# --------------------
+class InferDetectron2Detection(dataprocess.C2dImageTask):
+
+    def __init__(self, name, param):
+        dataprocess.C2dImageTask.__init__(self, name)
+        # Add input/output of the process here
+        # Example :  self.addInput(dataprocess.CImageIO())
+        #           self.addOutput(dataprocess.CImageIO())
+        self.predictor = None
+        self.cfg = None
+        self.colors = None
+        # Add graphics output
+        self.addOutput(dataprocess.CGraphicsOutput())
+        # Add numeric output
+        self.addOutput(dataprocess.CBlobMeasureIO())
+        # Create parameters class
+        if param is None:
+            self.setParam(InferDetectron2DetectionParam())
+        else:
+            self.setParam(copy.deepcopy(param))
+
+    def getProgressSteps(self, eltCount=1):
+        # Function returning the number of progress steps for this process
+        # This is handled by the main progress bar of Ikomia application
+        return 1
+
+    def run(self):
+        # Core function of your process
+        # Call beginTaskRun for initialization
+        self.beginTaskRun()
+
+        # Forward input image
+        self.forwardInputImage(0, 0)
+
+        # Get parameters :
+        param = self.getParam()
+        if self.predictor is None or param.update:
+            self.cfg = get_cfg()
+            self.cfg.merge_from_file(model_zoo.get_config_file(param.model_name+'.yaml'))
+            self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
+            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(param.model_name+'.yaml')
+            self.class_names = MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]).get("thing_classes")
+            self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
+            self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
+            self.cfg.MODEL.DEVICE = 'cuda' if param.cuda else 'cpu'
+            self.predictor = DefaultPredictor(self.cfg)
+
+            param.update = False
+            print("Inference will run on "+('cuda' if param.cuda else 'cpu'))
+
+        # Examples :
+        # Get input :
+        input = self.getInput(0)
+
+        # Get output :
+        graphics_output = self.getOutput(1)
+        numeric_output = self.getOutput(2)
+
+        if input.isDataAvailable():
+            graphics_output.setNewLayer("Detectron2_Detection")
+            graphics_output.setImageIndex(0)
+            img = input.getImage()
+            numeric_output.clearData()
+
+            self.infer(img, graphics_output, numeric_output)
+
+        # Call to the process main routine
+        # dstImage = ...
+
+        # Set image of input/output (numpy array):
+        # output.setImage(dstImage)
+
+        # Step progress bar:
+        self.emitStepProgress()
+
+        # Call endTaskRun to finalize process
+        self.endTaskRun()
+
+    def infer(self, img, graphics_output, numeric_output):
+        outputs = self.predictor(img)
+        if "instances" in outputs.keys():
+            instances = outputs["instances"].to("cpu")
+            boxes = instances.pred_boxes
+            scores = instances.scores
+            classes = instances.pred_classes
+
+            for box, score, cls in zip(boxes, scores, classes):
+                score = float(score)
+                if score >= self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
+                    x1, y1, x2, y2 = box.numpy()
+                    cls = int(cls.numpy())
+                    w = float(x2 - x1)
+                    h = float(y2 - y1)
+                    prop_rect = core.GraphicsRectProperty()
+                    prop_rect.pen_color = self.colors[cls]
+                    graphics_box = graphics_output.addRectangle(float(x1), float(y1), w, h, prop_rect)
+                    graphics_box.setCategory(self.class_names[cls])
+                    # Label
+                    name = self.class_names[int(cls)]
+                    prop_text = core.GraphicsTextProperty()
+                    prop_text.font_size = 8
+                    prop_text.color = self.colors[cls]
+                    graphics_output.addText(name, float(x1), float(y1), prop_text)
+                    # Object results
+                    results = []
+                    confidence_data = dataprocess.CObjectMeasure(
+                        dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
+                        score,
+                        graphics_box.getId(),
+                        name)
+                    box_data = dataprocess.CObjectMeasure(
+                        dataprocess.CMeasure(core.MeasureId.BBOX),
+                        graphics_box.getBoundingRect(),
+                        graphics_box.getId(),
+                        name)
+                    results.append(confidence_data)
+                    results.append(box_data)
+                    numeric_output.addObjectMeasures(results)
+
+        elif "proposals" in outputs.keys():
+            proposals = outputs["proposals"].to("cpu")
+            boxes = proposals.get_fields()["proposal_boxes"]
+            objectness_logits = proposals.get_fields()["objectness_logits"]
+
+            for i, box in enumerate(boxes):
+                obj_prob = float(torch.sigmoid(objectness_logits[i]))
+                x1, y1, x2, y2 = box.numpy()
+                if obj_prob > self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
+                    w = float(x2 - x1)
+                    h = float(y2 - y1)
+                    prop_rect = core.GraphicsRectProperty()
+                    prop_rect.pen_color = [255,0,0]
+                    graphics_box = graphics_output.addRectangle(float(x1), float(y1), w, h, prop_rect)
+                    graphics_box.setCategory("proposal")
+                    # Label
+                    name = "proposal"
+                    prop_text = core.GraphicsTextProperty()
+                    prop_text.font_size = 8
+                    prop_text.color = [255,0,0]
+                    graphics_output.addText(name, float(x1), float(y1), prop_text)
+                    # Object results
+                    results = []
+                    confidence_data = dataprocess.CObjectMeasure(
+                        dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
+                        obj_prob,
+                        graphics_box.getId(),
+                        name)
+                    box_data = dataprocess.CObjectMeasure(
+                        dataprocess.CMeasure(core.MeasureId.BBOX),
+                        graphics_box.getBoundingRect(),
+                        graphics_box.getId(),
+                        name)
+                    results.append(confidence_data)
+                    results.append(box_data)
+                    numeric_output.addObjectMeasures(results)
+
+
+
+# --------------------
+# - Factory class to build process object
+# - Inherits PyDataProcess.CTaskFactory from Ikomia API
+# --------------------
+class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
+
+    def __init__(self):
+        dataprocess.CTaskFactory.__init__(self)
+        # Set process information as string here
+        self.info.name = "infer_detectron2_detection"
+        self.info.shortDescription = "your short description"
+        self.info.description = "your description"
+        # relative path -> as displayed in Ikomia application process tree
+        self.info.path = "Plugins/Python"
+        self.info.version = "1.0.0"
+        # self.info.iconPath = "your path to a specific icon"
+        self.info.authors = "algorithm author"
+        self.info.article = "title of associated research article"
+        self.info.journal = "publication journal"
+        self.info.year = 2021
+        self.info.license = "MIT License"
+        # URL of documentation
+        self.info.documentationLink = ""
+        # Code source repository
+        self.info.repository = ""
+        # Keywords used for search
+        self.info.keywords = "your,keywords,here"
+
+    def create(self, param=None):
+        # Create process object
+        return InferDetectron2Detection(self.info.name, param)
