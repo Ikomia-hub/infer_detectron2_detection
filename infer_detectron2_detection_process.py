@@ -234,18 +234,18 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python"
         self.info.version = "1.0.0"
-        # self.info.iconPath = "your path to a specific icon"
-        self.info.authors = "algorithm author"
-        self.info.article = "title of associated research article"
-        self.info.journal = "publication journal"
-        self.info.year = 2021
-        self.info.license = "Apache-2.0 License"
+        self.info.iconPath = "icons/detectron2.png"
+        self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
+        self.info.article = "Detectron2"
+        self.info.journal = ""
+        self.info.year = 2019
+        self.info.license = "Apache License 2.0"
         # URL of documentation
-        self.info.documentationLink = ""
+        self.info.documentationLink = "https://detectron2.readthedocs.io/en/latest/"
         # Code source repository
-        self.info.repository = ""
+        self.info.repository = "https://github.com/facebookresearch/detectron2"
         # Keywords used for search
-        self.info.keywords = "your,keywords,here"
+        self.info.keywords = "infer, detectron2, object, detection"
 
     def create(self, param=None):
         # Create process object
