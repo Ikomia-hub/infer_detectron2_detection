@@ -229,8 +229,8 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "infer_detectron2_detection"
-        self.info.shortDescription = "your short description"
-        self.info.description = "your description"
+        self.info.shortDescription = "Inference for Detectron2 detection models"
+        self.info.description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python"
         self.info.version = "1.0.0"
