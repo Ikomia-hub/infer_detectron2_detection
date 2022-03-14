@@ -49,7 +49,7 @@ class InferDetectron2DetectionWidget(core.CWorkflowTaskWidget):
             for name in files:
                 file_path = os.path.join(root, name)
                 possible_cfg = os.path.join(*file_path.split('/')[-2:])
-                if "Detection" in possible_cfg and possible_cfg.endswith('.yaml'):
+                if "Detection" in possible_cfg and possible_cfg.endswith('.yaml') and 'rpn' not in possible_cfg:
                     available_cfg.append(possible_cfg.replace('.yaml', ''))
         self.combo_model = pyqtutils.append_combo(self.gridLayout, "Model Name")
         for model_name in available_cfg:
@@ -59,11 +59,22 @@ class InferDetectron2DetectionWidget(core.CWorkflowTaskWidget):
         self.double_spin_thres = pyqtutils.append_double_spin(self.gridLayout, "Confidence threshold",
                                                               self.parameters.conf_thres, min=0., max=1., step=1e-2)
         self.check_cuda = pyqtutils.append_check(self.gridLayout, "Cuda", self.parameters.cuda)
+        self.check_custom = pyqtutils.append_check(self.gridLayout, "Load trained model with Ikomia",
+                                                   self.parameters.custom_train)
+        self.browse_cfg = pyqtutils.append_browse_file(self.gridLayout, "Browse config file (.yaml)", self.parameters.cfg_path)
+        self.browse_weights = pyqtutils.append_browse_file(self.gridLayout, "Browse weights file (.pth)", self.parameters.weights_path)
+        self.browse_cfg.setEnabled(self.check_custom.isChecked())
+        self.browse_weights.setEnabled(self.check_custom.isChecked())
+        self.check_custom.stateChanged.connect(self.on_check)
         # PyQt -> Qt wrapping
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
         # Set widget layout
         self.setLayout(layout_ptr)
+
+    def on_check(self, int):
+        self.browse_cfg.setEnabled(self.check_custom.isChecked())
+        self.browse_weights.setEnabled(self.check_custom.isChecked())
 
     def onApply(self):
         # Apply button clicked slot
@@ -73,7 +84,9 @@ class InferDetectron2DetectionWidget(core.CWorkflowTaskWidget):
         self.parameters.conf_thres = self.double_spin_thres.value()
         self.parameters.update = True
         self.parameters.cuda = self.check_cuda.isChecked()
-
+        self.parameters.custom_train = self.check_custom.isChecked()
+        self.parameters.cfg_path = self.browse_cfg.path
+        self.parameters.weights_path = self.browse_weights.path
         # Send signal to launch the process
         self.emitApply(self.parameters)
 
