@@ -24,6 +24,7 @@ from infer_detectron2_detection.infer_detectron2_detection_process import InferD
 from PyQt5.QtWidgets import *
 import detectron2
 import os
+from detectron2 import model_zoo
 
 
 # --------------------
@@ -50,6 +51,10 @@ class InferDetectron2DetectionWidget(core.CWorkflowTaskWidget):
                 file_path = os.path.join(root, name)
                 possible_cfg = os.path.join(*file_path.split('/')[-2:])
                 if "Detection" in possible_cfg and possible_cfg.endswith('.yaml') and 'rpn' not in possible_cfg:
+                    try:
+                        model_zoo.get_checkpoint_url(possible_cfg)
+                    except RuntimeError:
+                        continue
                     available_cfg.append(possible_cfg.replace('.yaml', ''))
         self.combo_model = pyqtutils.append_combo(self.gridLayout, "Model Name")
         for model_name in available_cfg:
