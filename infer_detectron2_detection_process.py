@@ -125,7 +125,7 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
                 config_path = os.path.join(os.path.dirname(detectron2.__file__), "model_zoo", "configs", param.model_name + '.yaml')
                 self.cfg.merge_from_file(config_path)
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
-                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(param.model_name+'.yaml')
+                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url((param.model_name+'.yaml').replace('\\', '/'))
                 self.class_names = MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]).get("thing_classes")
                 self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
                 self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
