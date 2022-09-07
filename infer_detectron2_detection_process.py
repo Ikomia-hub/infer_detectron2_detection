@@ -77,16 +77,11 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
 
     def __init__(self, name, param):
         dataprocess.C2dImageTask.__init__(self, name)
-        # Add input/output of the process here
-        # Example :  self.addInput(dataprocess.CImageIO())
-        #           self.addOutput(dataprocess.CImageIO())
         self.predictor = None
         self.cfg = None
         self.colors = None
-        # Add graphics output
-        self.addOutput(dataprocess.CGraphicsOutput())
-        # Add numeric output
-        self.addOutput(dataprocess.CBlobMeasureIO())
+        # Add object detection output
+        self.addOutput(dataprocess.CObjectDetectionIO())
         # Create parameters class
         if param is None:
             self.setParam(InferDetectron2DetectionParam())
@@ -138,19 +133,15 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
 
         # Examples :
         # Get input :
-        input = self.getInput(0)
+        img_input = self.getInput(0)
 
         # Get output :
-        graphics_output = self.getOutput(1)
-        numeric_output = self.getOutput(2)
+        obj_detect_out = self.getOutput(1)
 
-        if input.isDataAvailable():
-            graphics_output.setNewLayer("Detectron2_Detection")
-            graphics_output.setImageIndex(0)
-            img = input.getImage()
-            numeric_output.clearData()
-
-            self.infer(img, graphics_output, numeric_output)
+        if img_input.isDataAvailable():
+            obj_detect_out.init("Detectron2_Detection", 0)
+            img = img_input.getImage()
+            self.infer(img, obj_detect_out)
 
         # Step progress bar:
         self.emitStepProgress()
@@ -158,7 +149,7 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
         # Call endTaskRun to finalize process
         self.endTaskRun()
 
-    def infer(self, img, graphics_output, numeric_output):
+    def infer(self, img, obj_detect_out):
         outputs = self.predictor(img)
         if "instances" in outputs.keys():
             instances = outputs["instances"].to("cpu")
@@ -173,31 +164,8 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
                     cls = int(cls.numpy())
                     w = float(x2 - x1)
                     h = float(y2 - y1)
-                    prop_rect = core.GraphicsRectProperty()
-                    prop_rect.pen_color = self.colors[cls]
-                    graphics_box = graphics_output.addRectangle(float(x1), float(y1), w, h, prop_rect)
-                    graphics_box.setCategory(self.class_names[cls])
-                    # Label
-                    name = self.class_names[int(cls)]
-                    prop_text = core.GraphicsTextProperty()
-                    prop_text.font_size = 8
-                    prop_text.color = self.colors[cls]
-                    graphics_output.addText(name, float(x1), float(y1), prop_text)
-                    # Object results
-                    results = []
-                    confidence_data = dataprocess.CObjectMeasure(
-                        dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
-                        score,
-                        graphics_box.getId(),
-                        name)
-                    box_data = dataprocess.CObjectMeasure(
-                        dataprocess.CMeasure(core.MeasureId.BBOX),
-                        graphics_box.getBoundingRect(),
-                        graphics_box.getId(),
-                        name)
-                    results.append(confidence_data)
-                    results.append(box_data)
-                    numeric_output.addObjectMeasures(results)
+                    obj_detect_out.addObject(self.class_names[int(cls)], score,
+                                             float(x1), float(y1), w, h, self.colors[cls])
 
         elif "proposals" in outputs.keys():
             proposals = outputs["proposals"].to("cpu")
@@ -207,34 +175,11 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
             for i, box in enumerate(boxes):
                 obj_prob = float(torch.sigmoid(objectness_logits[i]))
                 x1, y1, x2, y2 = box.numpy()
+
                 if obj_prob > self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
                     w = float(x2 - x1)
                     h = float(y2 - y1)
-                    prop_rect = core.GraphicsRectProperty()
-                    prop_rect.pen_color = [255,0,0]
-                    graphics_box = graphics_output.addRectangle(float(x1), float(y1), w, h, prop_rect)
-                    graphics_box.setCategory("proposal")
-                    # Label
-                    name = "proposal"
-                    prop_text = core.GraphicsTextProperty()
-                    prop_text.font_size = 8
-                    prop_text.color = [255,0,0]
-                    graphics_output.addText(name, float(x1), float(y1), prop_text)
-                    # Object results
-                    results = []
-                    confidence_data = dataprocess.CObjectMeasure(
-                        dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
-                        obj_prob,
-                        graphics_box.getId(),
-                        name)
-                    box_data = dataprocess.CObjectMeasure(
-                        dataprocess.CMeasure(core.MeasureId.BBOX),
-                        graphics_box.getBoundingRect(),
-                        graphics_box.getId(),
-                        name)
-                    results.append(confidence_data)
-                    results.append(box_data)
-                    numeric_output.addObjectMeasures(results)
+                    obj_detect_out.addObject("proposal", obj_prob, float(x1), float(y1), w, h, [255, 0, 0])
 
 
 # --------------------
@@ -251,7 +196,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.0.1"
+        self.info.version = "1.1.0"
         self.info.iconPath = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
