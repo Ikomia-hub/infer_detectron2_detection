@@ -157,6 +157,7 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
             scores = instances.scores
             classes = instances.pred_classes
 
+            index = 0
             for box, score, cls in zip(boxes, scores, classes):
                 score = float(score)
                 if score >= self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
@@ -164,9 +165,9 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
                     cls = int(cls.numpy())
                     w = float(x2 - x1)
                     h = float(y2 - y1)
-                    obj_detect_out.addObject(self.class_names[int(cls)], score,
+                    obj_detect_out.addObject(index, self.class_names[int(cls)], score,
                                              float(x1), float(y1), w, h, self.colors[cls])
-
+                    index += 1
         elif "proposals" in outputs.keys():
             proposals = outputs["proposals"].to("cpu")
             boxes = proposals.get_fields()["proposal_boxes"]
@@ -179,7 +180,7 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
                 if obj_prob > self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
                     w = float(x2 - x1)
                     h = float(y2 - y1)
-                    obj_detect_out.addObject("proposal", obj_prob, float(x1), float(y1), w, h, [255, 0, 0])
+                    obj_detect_out.addObject(i, "proposal", obj_prob, float(x1), float(y1), w, h, [255, 0, 0])
 
 
 # --------------------
