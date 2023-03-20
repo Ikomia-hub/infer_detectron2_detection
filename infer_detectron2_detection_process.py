@@ -46,7 +46,7 @@ class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
         self.cfg_path = ""
         self.weights_path = ""
 
-    def setParamMap(self, param_map):
+    def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
         self.model_name = param_map["model_name"]
@@ -56,10 +56,10 @@ class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
         self.cfg_path = param_map["cfg_path"]
         self.weights_path = param_map["weights_path"]
 
-    def getParamMap(self):
+    def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
-        param_map = core.ParamMap()
+        param_map = {}
         param_map["model_name"] = self.model_name
         param_map["conf_thres"] = str(self.conf_thres)
         param_map["cuda"] = str(self.cuda)
@@ -73,36 +73,35 @@ class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
 # - Class which implements the process
 # - Inherits PyCore.CWorkflowTask or derived from Ikomia API
 # --------------------
-class InferDetectron2Detection(dataprocess.C2dImageTask):
+class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
 
     def __init__(self, name, param):
-        dataprocess.C2dImageTask.__init__(self, name)
+        dataprocess.CObjectDetectionTask.__init__(self, name)
         self.predictor = None
         self.cfg = None
         self.colors = None
         # Add object detection output
-        self.addOutput(dataprocess.CObjectDetectionIO())
         # Create parameters class
         if param is None:
-            self.setParam(InferDetectron2DetectionParam())
+            self.set_param_object(InferDetectron2DetectionParam())
         else:
-            self.setParam(copy.deepcopy(param))
+            self.set_param_object(copy.deepcopy(param))
 
-    def getProgressSteps(self):
+    def get_progress_steps(self):
         # Function returning the number of progress steps for this process
         # This is handled by the main progress bar of Ikomia application
         return 1
 
     def run(self):
         # Core function of your process
-        # Call beginTaskRun for initialization
-        self.beginTaskRun()
+        # Call begin_task_run for initialization
+        self.begin_task_run()
 
         # Forward input image
-        self.forwardInputImage(0, 0)
+        self.forward_input_image(0, 0)
 
         # Get parameters :
-        param = self.getParam()
+        param = self.get_param_object()
         if self.predictor is None or param.update:
             if param.custom_train:
                 self.cfg = get_cfg()
@@ -131,25 +130,23 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
             param.update = False
             print("Inference will run on "+('cuda' if param.cuda else 'cpu'))
 
+        self.set_names(self.class_names)
+
         # Examples :
         # Get input :
-        img_input = self.getInput(0)
+        img_input = self.get_input(0)
 
-        # Get output :
-        obj_detect_out = self.getOutput(1)
-
-        if img_input.isDataAvailable():
-            obj_detect_out.init("Detectron2_Detection", 0)
-            img = img_input.getImage()
-            self.infer(img, obj_detect_out)
+        if img_input.is_data_available():
+            img = img_input.get_image()
+            self.infer(img)
 
         # Step progress bar:
-        self.emitStepProgress()
+        self.emit_step_progress()
 
-        # Call endTaskRun to finalize process
-        self.endTaskRun()
+        # Call end_task_run to finalize process
+        self.end_task_run()
 
-    def infer(self, img, obj_detect_out):
+    def infer(self, img):
         outputs = self.predictor(img)
         if "instances" in outputs.keys():
             instances = outputs["instances"].to("cpu")
@@ -165,22 +162,9 @@ class InferDetectron2Detection(dataprocess.C2dImageTask):
                     cls = int(cls.numpy())
                     w = float(x2 - x1)
                     h = float(y2 - y1)
-                    obj_detect_out.addObject(index, self.class_names[int(cls)], score,
-                                             float(x1), float(y1), w, h, self.colors[cls])
+                    self.add_object(index, cls, score,
+                                             float(x1), float(y1), w, h)
                     index += 1
-        elif "proposals" in outputs.keys():
-            proposals = outputs["proposals"].to("cpu")
-            boxes = proposals.get_fields()["proposal_boxes"]
-            objectness_logits = proposals.get_fields()["objectness_logits"]
-
-            for i, box in enumerate(boxes):
-                obj_prob = float(torch.sigmoid(objectness_logits[i]))
-                x1, y1, x2, y2 = box.numpy()
-
-                if obj_prob > self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST:
-                    w = float(x2 - x1)
-                    h = float(y2 - y1)
-                    obj_detect_out.addObject(i, "proposal", obj_prob, float(x1), float(y1), w, h, [255, 0, 0])
 
 
 # --------------------
@@ -193,19 +177,19 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "infer_detectron2_detection"
-        self.info.shortDescription = "Inference for Detectron2 detection models"
+        self.info.short_description = "Inference for Detectron2 detection models"
         self.info.description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.1.0"
-        self.info.iconPath = "icons/detectron2.png"
+        self.info.version = "1.2.0"
+        self.info.icon_path = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
         self.info.journal = ""
         self.info.year = 2019
         self.info.license = "Apache License 2.0"
         # URL of documentation
-        self.info.documentationLink = "https://detectron2.readthedocs.io/en/latest/"
+        self.info.documentation_link = "https://detectron2.readthedocs.io/en/latest/"
         # Code source repository
         self.info.repository = "https://github.com/facebookresearch/detectron2"
         # Keywords used for search

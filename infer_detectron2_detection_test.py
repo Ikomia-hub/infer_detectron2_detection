@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 def test(t, data_dict):
     logger.info("===== Test::infer detectron2 detection =====")
     img = cv2.imread(data_dict["images"]["detection"]["coco"])[::-1]
-    input_img = t.getInput(0)
-    input_img.setImage(img)
+    input_img = t.get_input(0)
+    input_img.set_image(img)
 
     config_paths = os.path.dirname(detectron2.__file__) + "/model_zoo"
 
