@@ -38,34 +38,37 @@ class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
     def __init__(self):
         core.CWorkflowTaskParam.__init__(self)
         # Place default value initialization here
+        self.model_name_or_path = ""
         self.model_name = "COCO-Detection/faster_rcnn_R_50_C4_1x"
         self.conf_thres = 0.5
         self.cuda = True if torch.cuda.is_available() else False
         self.update = False
-        self.custom_train = False
-        self.cfg_path = ""
-        self.weights_path = ""
+        self.use_custom_model = False
+        self.config = ""
+        self.model_path = ""
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
+        self.model_name_or_path = param_map["model_name_or_path"]
         self.model_name = param_map["model_name"]
         self.conf_thres = float(param_map["conf_thres"])
         self.cuda = eval(param_map["cuda"])
-        self.custom_train = eval(param_map["custom_train"])
-        self.cfg_path = param_map["cfg_path"]
-        self.weights_path = param_map["weights_path"]
+        self.use_custom_model = eval(param_map["use_custom_model"])
+        self.config = param_map["config"]
+        self.model_path = param_map["model_path"]
 
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {
+            "model_name_or_path": str(self.model_name_or_path),
             "model_name": self.model_name,
             "conf_thres": str(self.conf_thres),
             "cuda": str(self.cuda),
-            "custom_train": str(self.custom_train),
-            "cfg_path": self.cfg_path,
-            "weights_path": self.weights_path}
+            "use_custom_model": str(self.use_custom_model),
+            "config": self.config,
+            "model_path": self.model_path}
         return param_map
 
 
@@ -103,12 +106,22 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
         # Get parameters :
         param = self.get_param_object()
         if self.predictor is None or param.update:
-            if param.custom_train:
+            if param.model_path != "":
+                if os.path.isfile(param.model_path):
+                    param.use_custom_model = True
+            if param.model_name_or_path != "":
+                if os.path.isfile(param.model_name_or_path):
+                    param.use_custom_model = True
+                    param.model_path = param.model_name_or_path
+                else:
+                    param.model_name = param.model_name_or_path
+
+            if param.use_custom_model:
                 self.cfg = get_cfg()
                 self.cfg.CLASS_NAMES = None
-                self.cfg.merge_from_file(param.cfg_path)
+                self.cfg.merge_from_file(param.config)
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
-                self.cfg.MODEL.WEIGHTS = param.weights_path
+                self.cfg.MODEL.WEIGHTS = param.model_path
                 self.class_names = self.cfg.CLASS_NAMES
                 self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
                 self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
