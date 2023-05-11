@@ -38,37 +38,34 @@ class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
     def __init__(self):
         core.CWorkflowTaskParam.__init__(self)
         # Place default value initialization here
-        self.model_name_or_path = ""
         self.model_name = "COCO-Detection/faster_rcnn_R_50_C4_1x"
         self.conf_thres = 0.5
         self.cuda = True if torch.cuda.is_available() else False
         self.update = False
         self.use_custom_model = False
         self.config_file = ""
-        self.model_path = ""
+        self.model_weight_file = ""
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        self.model_name_or_path = param_map["model_name_or_path"]
         self.model_name = param_map["model_name"]
         self.conf_thres = float(param_map["conf_thres"])
         self.cuda = eval(param_map["cuda"])
         self.use_custom_model = eval(param_map["use_custom_model"])
         self.config_file = param_map["config_file"]
-        self.model_path = param_map["model_path"]
+        self.model_weight_file = param_map["model_weight_file"]
 
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {
-            "model_name_or_path": str(self.model_name_or_path),
             "model_name": self.model_name,
             "conf_thres": str(self.conf_thres),
             "cuda": str(self.cuda),
             "use_custom_model": str(self.use_custom_model),
             "config_file": self.config_file,
-            "model_path": self.model_path}
+            "model_weight_file": self.model_weight_file}
         return param_map
 
 
@@ -106,22 +103,17 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
         # Get parameters :
         param = self.get_param_object()
         if self.predictor is None or param.update:
-            if param.model_path != "":
-                if os.path.isfile(param.model_path):
+
+            if param.model_weight_file != "":
+                if os.path.isfile(param.model_weight_file):
                     param.use_custom_model = True
-            if param.model_name_or_path != "":
-                if os.path.isfile(param.model_name_or_path):
-                    param.use_custom_model = True
-                    param.model_path = param.model_name_or_path
-                else:
-                    param.model_name = param.model_name_or_path
 
             if param.use_custom_model:
                 self.cfg = get_cfg()
                 self.cfg.CLASS_NAMES = None
                 self.cfg.merge_from_file(param.config_file)
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
-                self.cfg.MODEL.WEIGHTS = param.model_path
+                self.cfg.MODEL.WEIGHTS = param.model_weight_file
                 self.class_names = self.cfg.CLASS_NAMES
                 self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
                 self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
