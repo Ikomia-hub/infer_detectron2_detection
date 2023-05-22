@@ -97,6 +97,9 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
         # Call begin_task_run for initialization
         self.begin_task_run()
 
+        # Temporary fix to clean detection outputs
+        self.get_output(1).clear_data()
+
         # Forward input image
         self.forward_input_image(0, 0)
 
