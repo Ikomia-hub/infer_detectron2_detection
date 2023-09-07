@@ -21,8 +21,9 @@
 
 Inference for Detectron2 detection models
 
-[Insert illustrative image here. Image must be accessible publicly, in algorithm Github repository for example.
-<img src="images/illustration.png"  alt="Illustrative image" width="30%" height="30%">]
+<img src="https://raw.githubusercontent.com/Ikomia-hub/infer_detectron2_detection/main/icons/output.jpg"  alt="Illustrative image" width="30%" height="30%">
+
+
 
 ## :rocket: Use with Ikomia API
 
@@ -36,11 +37,10 @@ pip install ikomia
 
 #### 2. Create your workflow
 
-[Change the sample image URL to fit algorithm purpose]
 
 ```python
-import ikomia
 from ikomia.dataprocess.workflow import Workflow
+from ikomia.utils.displayIO import display
 
 # Init your workflow
 wf = Workflow()
@@ -49,7 +49,11 @@ wf = Workflow()
 algo = wf.add_task(name="infer_detectron2_detection", auto_connect=True)
 
 # Run on your image  
-wf.run_on(url="example_image.png")
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_work.jpg")
+
+# Inpect your result
+display(algo.get_image_with_graphics())
+
 ```
 
 ## :sunny: Use with Ikomia Studio
@@ -61,13 +65,14 @@ Ikomia Studio offers a friendly UI with the same features as the API.
 - For additional guidance on getting started with Ikomia Studio, check out [this blog post](https://www.ikomia.ai/blog/how-to-get-started-with-ikomia-studio).
 
 ## :pencil: Set algorithm parameters
+ 
+- **conf_thres** (float) - default '0.5': Box threshold for the prediction [0,1]
+- **cuda** (bool): If True, CUDA-based inference (GPU). If False, run on CPU
+- **config_file** (str, *optional*): Path to the .yaml config file.
+- **model_weight_file** (str, *optional*): Path to model weights file .pth.
 
-[Explain each algorithm parameters]
-
-[Change the sample image URL to fit algorithm purpose]
 
 ```python
-import ikomia
 from ikomia.dataprocess.workflow import Workflow
 
 # Init your workflow
@@ -77,14 +82,15 @@ wf = Workflow()
 algo = wf.add_task(name="infer_detectron2_detection", auto_connect=True)
 
 algo.set_parameters({
-    "param1": "value1",
-    "param2": "value2",
-    ...
+    "conf_thres": "0.6",
+    "cuda": "True",
 })
 
 # Run on your image  
-wf.run_on(url="example_image.png")
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_work.jpg")
 
+# Inpect your result
+display(algo.get_image_with_graphics())
 ```
 
 ## :mag: Explore algorithm outputs
@@ -102,7 +108,7 @@ wf = Workflow()
 algo = wf.add_task(name="infer_detectron2_detection", auto_connect=True)
 
 # Run on your image  
-wf.run_on(url="example_image.png")
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_work.jpg")
 
 # Iterate over outputs
 for output in algo.get_outputs()
@@ -112,6 +118,4 @@ for output in algo.get_outputs()
     output.to_json()
 ```
 
-## :fast_forward: Advanced usage 
 
-[optional]
