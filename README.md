@@ -71,6 +71,7 @@ Ikomia Studio offers a friendly UI with the same features as the API.
 - **config_file** (str, *optional*): Path to the .yaml config file.
 - **model_weight_file** (str, *optional*): Path to model weights file .pth.
 
+**Parameters** should be in **strings format**  when added to the dictionary.
 
 ```python
 from ikomia.dataprocess.workflow import Workflow
