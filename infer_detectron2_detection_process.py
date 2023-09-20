@@ -105,6 +105,10 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
 
         # Get parameters :
         param = self.get_param_object()
+
+        # Set cache dir in the algorithm folder to simplify deployment
+        os.environ["FVCORE_CACHE"] = os.path.join(os.path.dirname(__file__), "models")
+
         if self.predictor is None or param.update:
 
             if param.model_weight_file != "":
