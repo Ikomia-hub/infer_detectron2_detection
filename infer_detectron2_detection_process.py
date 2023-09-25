@@ -123,7 +123,7 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
                 self.class_names = self.cfg.CLASS_NAMES
                 self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
                 self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
-                self.cfg.MODEL.DEVICE = 'cuda' if param.cuda else 'cpu'
+                self.cfg.MODEL.DEVICE = 'cuda' if param.cuda and torch.cuda.is_available() else 'cpu'
                 self.predictor = DefaultPredictor(self.cfg)
 
             else:
@@ -135,11 +135,11 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
                 self.class_names = MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]).get("thing_classes")
                 self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
                 self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
-                self.cfg.MODEL.DEVICE = 'cuda' if param.cuda else 'cpu'
+                self.cfg.MODEL.DEVICE = 'cuda' if param.cuda and torch.cuda.is_available() else 'cpu'
                 self.predictor = DefaultPredictor(self.cfg)
 
             param.update = False
-            print("Inference will run on "+('cuda' if param.cuda else 'cpu'))
+            print("Inference will run on "+self.cfg.MODEL.DEVICE)
 
         self.set_names(self.class_names)
 
