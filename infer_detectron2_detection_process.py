@@ -189,7 +189,6 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         # Set process information as string here
         self.info.name = "infer_detectron2_detection"
         self.info.short_description = "Inference for Detectron2 detection models"
-        self.info.description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
         self.info.version = "1.2.0"
@@ -202,7 +201,8 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         # URL of documentation
         self.info.documentation_link = "https://detectron2.readthedocs.io/en/latest/"
         # Code source repository
-        self.info.repository = "https://github.com/facebookresearch/detectron2"
+        self.info.repository = "https://github.com/Ikomia-hub/infer_detectron2_detection"
+        self.info.original_repository = "https://github.com/facebookresearch/detectron2"
         # Keywords used for search
         self.info.keywords = "infer, detectron2, object, detection"
 
