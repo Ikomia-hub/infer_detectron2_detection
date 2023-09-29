@@ -205,6 +205,8 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.original_repository = "https://github.com/facebookresearch/detectron2"
         # Keywords used for search
         self.info.keywords = "infer, detectron2, object, detection"
+        self.info.algo_type = core.AlgoType.INFER
+        self.info.algo_tasks = "OBJECT_DETECTION"
 
     def create(self, param=None):
         # Create process object
