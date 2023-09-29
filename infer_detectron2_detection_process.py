@@ -105,6 +105,10 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
 
         # Get parameters :
         param = self.get_param_object()
+
+        # Set cache dir in the algorithm folder to simplify deployment
+        os.environ["FVCORE_CACHE"] = os.path.join(os.path.dirname(__file__), "models")
+
         if self.predictor is None or param.update:
 
             # Set cache dir in the algorithm folder to simplify deployment
@@ -151,6 +155,8 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
             img = img_input.get_image()
             self.infer(img)
 
+        os.environ.pop("FVCORE_CACHE")
+
         # Step progress bar:
         self.emit_step_progress()
 
@@ -191,7 +197,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.short_description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.2.0"
+        self.info.version = "1.3.0"
         self.info.icon_path = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
