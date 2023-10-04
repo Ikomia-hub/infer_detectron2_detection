@@ -132,7 +132,9 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
 
             else:
                 self.cfg = get_cfg()
-                config_path = os.path.join(os.path.dirname(detectron2.__file__), "model_zoo", "configs", param.model_name + '.yaml')
+                dataset_name, config_name = param.model_name.replace(os.path.sep, '/').split('/')
+                config_path = os.path.join(os.path.dirname(detectron2.__file__), "model_zoo", "configs",
+                                           dataset_name, config_name + '.yaml')
                 self.cfg.merge_from_file(config_path)
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
                 self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url((param.model_name+'.yaml').replace('\\', '/'))
@@ -197,7 +199,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.short_description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.3.0"
+        self.info.version = "1.3.1"
         self.info.icon_path = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
