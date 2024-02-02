@@ -199,7 +199,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.short_description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.3.2"
+        self.info.version = "1.3.3"
         self.info.icon_path = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
