@@ -21,8 +21,8 @@
 
 Inference for Detectron2 detection models
 
-<img src="https://raw.githubusercontent.com/Ikomia-hub/infer_detectron2_detection/main/icons/output.jpg"  alt="Illustrative image" width="30%" height="30%">
 
+![object detection](https://raw.githubusercontent.com/Ikomia-hub/infer_detectron2_detection/main/icons/output.jpg)
 
 
 ## :rocket: Use with Ikomia API
@@ -59,9 +59,7 @@ display(algo.get_image_with_graphics())
 ## :sunny: Use with Ikomia Studio
 
 Ikomia Studio offers a friendly UI with the same features as the API.
-
 - If you haven't started using Ikomia Studio yet, download and install it from [this page](https://www.ikomia.ai/studio).
-
 - For additional guidance on getting started with Ikomia Studio, check out [this blog post](https://www.ikomia.ai/blog/how-to-get-started-with-ikomia-studio).
 
 ## :pencil: Set algorithm parameters
@@ -75,6 +73,7 @@ Ikomia Studio offers a friendly UI with the same features as the API.
 
 ```python
 from ikomia.dataprocess.workflow import Workflow
+from ikomia.utils.displayIO import display
 
 # Init your workflow
 wf = Workflow()
@@ -99,7 +98,6 @@ display(algo.get_image_with_graphics())
 Every algorithm produces specific outputs, yet they can be explored them the same way using the Ikomia API. For a more in-depth understanding of managing algorithm outputs, please refer to the [documentation](https://ikomia-dev.github.io/python-api-documentation/advanced_guide/IO_management.html).
 
 ```python
-import ikomia
 from ikomia.dataprocess.workflow import Workflow
 
 # Init your workflow
