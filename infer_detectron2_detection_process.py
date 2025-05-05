@@ -33,6 +33,8 @@ import torch
 # - Class to handle the process parameters
 # - Inherits PyCore.CWorkflowTaskParam from Ikomia API
 # --------------------
+
+
 class InferDetectron2DetectionParam(core.CWorkflowTaskParam):
 
     def __init__(self):
@@ -107,12 +109,14 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
         param = self.get_param_object()
 
         # Set cache dir in the algorithm folder to simplify deployment
-        os.environ["FVCORE_CACHE"] = os.path.join(os.path.dirname(__file__), "models")
+        os.environ["FVCORE_CACHE"] = os.path.join(
+            os.path.dirname(__file__), "models")
 
         if self.predictor is None or param.update:
 
             # Set cache dir in the algorithm folder to simplify deployment
-            os.environ["FVCORE_CACHE"] = os.path.join(os.path.dirname(__file__), "weights")
+            os.environ["FVCORE_CACHE"] = os.path.join(
+                os.path.dirname(__file__), "weights")
 
             if param.model_weight_file != "":
                 if os.path.isfile(param.model_weight_file):
@@ -125,22 +129,29 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
                 self.cfg.MODEL.WEIGHTS = param.model_weight_file
                 self.class_names = self.cfg.CLASS_NAMES
-                self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
-                self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
+                self.colors = np.array(np.random.randint(
+                    0, 255, (len(self.class_names), 3)))
+                self.colors = [[int(c[0]), int(c[1]), int(c[2])]
+                               for c in self.colors]
                 self.cfg.MODEL.DEVICE = 'cuda' if param.cuda and torch.cuda.is_available() else 'cpu'
                 self.predictor = DefaultPredictor(self.cfg)
 
             else:
                 self.cfg = get_cfg()
-                dataset_name, config_name = param.model_name.replace(os.path.sep, '/').split('/')
+                dataset_name, config_name = param.model_name.replace(
+                    os.path.sep, '/').split('/')
                 config_path = os.path.join(os.path.dirname(detectron2.__file__), "model_zoo", "configs",
                                            dataset_name, config_name + '.yaml')
                 self.cfg.merge_from_file(config_path)
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = param.conf_thres
-                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url((param.model_name+'.yaml').replace('\\', '/'))
-                self.class_names = MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]).get("thing_classes")
-                self.colors = np.array(np.random.randint(0, 255, (len(self.class_names), 3)))
-                self.colors = [[int(c[0]), int(c[1]), int(c[2])] for c in self.colors]
+                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
+                    (param.model_name+'.yaml').replace('\\', '/'))
+                self.class_names = MetadataCatalog.get(
+                    self.cfg.DATASETS.TRAIN[0]).get("thing_classes")
+                self.colors = np.array(np.random.randint(
+                    0, 255, (len(self.class_names), 3)))
+                self.colors = [[int(c[0]), int(c[1]), int(c[2])]
+                               for c in self.colors]
                 self.cfg.MODEL.DEVICE = 'cuda' if param.cuda and torch.cuda.is_available() else 'cpu'
                 self.predictor = DefaultPredictor(self.cfg)
 
@@ -182,7 +193,7 @@ class InferDetectron2Detection(dataprocess.CObjectDetectionTask):
                     w = float(x2 - x1)
                     h = float(y2 - y1)
                     self.add_object(index, cls, score,
-                                             float(x1), float(y1), w, h)
+                                    float(x1), float(y1), w, h)
                     index += 1
 
 
@@ -199,7 +210,7 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         self.info.short_description = "Inference for Detectron2 detection models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.3.3"
+        self.info.version = "1.3.4"
         self.info.icon_path = "icons/detectron2.png"
         self.info.authors = "Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, Ross Girshick"
         self.info.article = "Detectron2"
@@ -211,6 +222,9 @@ class InferDetectron2DetectionFactory(dataprocess.CTaskFactory):
         # Code source repository
         self.info.repository = "https://github.com/Ikomia-hub/infer_detectron2_detection"
         self.info.original_repository = "https://github.com/facebookresearch/detectron2"
+        # Python compatibility
+        self.info.min_python_version = "3.8.0"
+        self.info.min_ikomia_version = "0.13.0"
         # Keywords used for search
         self.info.keywords = "infer, detectron2, object, detection"
         self.info.algo_type = core.AlgoType.INFER
